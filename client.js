@@ -166,7 +166,7 @@ window.OpenMetrics = function(openMetricUrl) {
     openMetrics._pingFlush(true);
   };
   return openMetrics;
-}();
+};
 
 // automatically start logging if required properties have been defined
 if (window.openMetricUrl && window._om)
