@@ -1,0 +1,46 @@
+{
+  "name": "open-metrics-client-javascript",
+  "version": "0.0.1",
+  "description": "a javascript script to log event to an Open Metrics server from the browser",
+  "main": "client.js",
+  "dependencies": {
+    "karma-chrome-launcher": "^0.2.2",
+    "karma-mocha": "^0.2.2",
+    "karma": "^0.13.22"
+  },
+  "devDependencies": {
+    "chai": "^3.5.0",
+    "codecov": "^1.0.1",
+    "istanbul": "^0.4.2",
+    "karma": "^0.13.22",
+    "karma-chai": "^0.1.0",
+    "karma-chrome-launcher": "^0.2.2",
+    "karma-firefox-launcher": "^0.1.7",
+    "karma-ie-launcher": "^0.2.0",
+    "karma-mocha": "^0.2.2",
+    "karma-opera-launcher": "^0.3.0",
+    "karma-phantomjs-launcher": "^1.0.0",
+    "karma-safari-launcher": "^0.1.1",
+    "karma-sinon": "^1.0.4",
+    "mocha": "^2.4.5",
+    "phantomjs-prebuilt": "^2.1.6",
+    "sinon": "^1.17.3"
+  },
+  "scripts": {
+    "test": "istanbul cover ./node_modules/.bin/karma start karmaTravis.conf.js && ./node_modules/.bin/codecov",
+    "testAll": "istanbul cover karma start karma.conf.js && ./node_modules/.bin/codecov"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/gsabran/open-metrics-client-javascript.git"
+  },
+  "keywords": [
+    "metrics"
+  ],
+  "author": "Guillaume Sabran",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/gsabran/open-metrics-client-javascript/issues"
+  },
+  "homepage": "https://github.com/gsabran/open-metrics-client-javascript#readme"
+}

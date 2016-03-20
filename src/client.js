@@ -14,6 +14,8 @@ window.OpenMetrics = function(openMetricUrl) {
       return true;
     },
   };
+  OpenMetrics.docCookies = docCookies;
+
   var COOKIE_KEY = '_metricId';
 
   var openMetrics = {
@@ -42,10 +44,19 @@ window.OpenMetrics = function(openMetricUrl) {
     
     /*
      * attach any number of properties to the current user
+     * those properties are attached to the user and not to a specific session
      * @properties should be a hash of propertyName: propertyValue
      */
     setUserProperties: function(properties) {
       openMetrics._get('/v1/setUserProps', {props: properties});
+    },
+    
+    /*
+     * attach any number of properties to the current session
+     * @properties should be a hash of propertyName: propertyValue
+     */
+    setSessionProperties: function(properties) {
+      openMetrics._get('/v1/setSessionProps', {props: properties});
     },
     
     /*
@@ -55,6 +66,18 @@ window.OpenMetrics = function(openMetricUrl) {
       if (!fromFlush)
         openMetrics._pingFlush(true);
       openMetrics._setNewSessionId();
+    },
+
+    /*
+     * destroy the logger
+     */
+    destroy: function() {
+      if (openMetrics._interval) {
+        clearInterval(openMetrics._interval);
+        openMetrics._interval = null;
+      }
+      for (var k in openMetrics)
+        delete openMetrics[k];
     },
 
 
@@ -79,9 +102,11 @@ window.OpenMetrics = function(openMetricUrl) {
       var xhr = new XMLHttpRequest();
       xhr.open("GET", url, true);
       xhr.onreadystatechange = function () {
-        if (xhr.readyState == 4 && xhr.status == 200) {
-          callback && callback();
-          // console.log(xhr.responseText);
+        if (xhr.readyState == 4 && callback) {
+          if (xhr.status === 200)
+            callback(null, xhr.responseText);
+          else
+            callback(true);
         }
       }
       xhr.send(null);
@@ -100,14 +125,21 @@ window.OpenMetrics = function(openMetricUrl) {
       var t = Date.now(),
         lastFlushed = openMetrics._lastTimeFlushed;
       // make sure we don't make requests too often
-      if (!flushAnyway && lastFlushed && t - lastFlushed < 1000) {
+
+      var _om = window._om,
+        _eq = openMetrics._eventsQueue;
+
+      var eventsNumber = _om.length + _eq.length;
+      
+      // don't make request too often, or if there is nothing to do
+      if (!eventsNumber || (!flushAnyway && lastFlushed && t - lastFlushed < 1000 && eventsNumber < 5)) {
         return;
       }
       openMetrics._lastTimeFlushed = t;
 
       // get the events put in the queue by the user
-      for (var k in window._om) {
-        var log = window._om[k];
+      for (var k in _om) {
+        var log = _om[k];
         switch (log[0]) {
           case 'event':
             openMetrics.logEvent(log[1], log[2]);
@@ -118,6 +150,9 @@ window.OpenMetrics = function(openMetricUrl) {
           case 'setUserProperties':
             openMetrics.setUserProperties(log[1]);
             break;
+          case 'setSessionProperties':
+            openMetrics.setSessionProperties(log[1]);
+            break;
           case 'clearSession':
             openMetrics.clearSession(true);
             break;
@@ -126,10 +161,10 @@ window.OpenMetrics = function(openMetricUrl) {
       window._om = [];
 
       // don't do anything if there's nothing to do
-      if (!openMetrics._eventsQueue.length)
+      if (!_eq.length)
         return;
 
-      openMetrics._get('/v1/events', {events: openMetrics._eventsQueue});
+      openMetrics._get('/v1/events', {events: _eq});
       openMetrics._eventsQueue = [];
     },
 
@@ -157,13 +192,13 @@ window.OpenMetrics = function(openMetricUrl) {
 
   // regularly log events
   openMetrics._pingFlush();
-  setInterval(openMetrics._pingFlush, 1000);
+  openMetrics._interval = setInterval(openMetrics._pingFlush, 1000);
 
   // make sure events get logged when user leave page
   var _onbeforeunload = window.onbeforeunload;
   window.onbeforeunload = function() {
     _onbeforeunload && _onbeforeunload();
-    openMetrics._pingFlush(true);
+    openMetrics._pingFlush && openMetrics._pingFlush(true);
   };
   return openMetrics;
 };
